@@ -5,7 +5,7 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 fn main() {
-    let username = get_input("Username");
+    let name = get_input("Name");
 
     // Generate a public/private key
     sodiumoxide::init().expect("Failed to initialize sodiumoxide");
@@ -25,25 +25,25 @@ fn main() {
         stream.peer_addr().expect("Failed to get peer address")
     );
 
-    // Exchange keys and confirm usernames
-    let other_username = get_input("Recipient");
+    // Exchange keys and confirm names
+    let other_name = get_input("Recipient");
 
-    send_ciphered(&stream, self_pk.as_ref(), username.as_bytes());
-    let other_pk_bytes = receive_ciphered(&stream, other_username.as_bytes());
+    send_ciphered(&stream, self_pk.as_ref(), name.as_bytes());
+    let other_pk_bytes = receive_ciphered(&stream, other_name.as_bytes());
     let other_pk = box_::PublicKey::from_slice(&other_pk_bytes).expect("Failed to parse bytes");
 
     let temp_nonce = box_::Nonce([0u8; box_::NONCEBYTES]);
     send_encrypted(
         &stream,
-        other_username.as_bytes(),
+        other_name.as_bytes(),
         &temp_nonce,
         &other_pk,
         &self_sk,
     );
     let conf_bytes = receive_encrypted(&stream, &temp_nonce, &other_pk, &self_sk);
     let conf = String::from_utf8(conf_bytes).expect("Failed to parse bytes");
-    if conf == username {
-        println!("Confirmed connection with {other_username}");
+    if conf == name {
+        println!("Confirmed connection with {other_name}");
     } else {
         panic!("Incorrect recipient");
     }
@@ -61,7 +61,7 @@ fn main() {
         loop {
             let message = prompt_message();
             send_encrypted(&stream, message.as_bytes(), &nonce, &other_pk, &self_sk);
-            println!("{username}: {message}");
+            println!("{name}: {message}");
             nonce.increment_le_inplace();
         }
     });
@@ -72,7 +72,7 @@ fn main() {
         loop {
             let message_bytes = receive_encrypted(&stream, &nonce, &other_pk, &self_sk);
             let message = String::from_utf8(message_bytes).expect("Failed to parse bytes");
-            println!("{other_username}: {message}");
+            println!("{other_name}: {message}");
             nonce.increment_le_inplace();
         }
     }
