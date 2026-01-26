@@ -164,8 +164,7 @@ fn receive_insecure(stream: &TcpStream) -> Vec<u8> {
 fn send_ciphered(stream: &TcpStream, bytes: &[u8], cipher: &[u8]) {
     let mut bytes = bytes.to_vec();
     for (i, byte) in bytes.iter_mut().enumerate() {
-        let diff = cipher[i % cipher.len()];
-        *byte = byte.wrapping_add(diff);
+        *byte ^= cipher[i % cipher.len()]; // XOR
     }
     send_insecure(stream, &bytes);
 }
@@ -173,8 +172,7 @@ fn send_ciphered(stream: &TcpStream, bytes: &[u8], cipher: &[u8]) {
 fn receive_ciphered(stream: &TcpStream, cipher: &[u8]) -> Vec<u8> {
     let mut bytes = receive_insecure(stream);
     for (i, byte) in bytes.iter_mut().enumerate() {
-        let diff = cipher[i % cipher.len()];
-        *byte = byte.wrapping_sub(diff);
+        *byte ^= cipher[i % cipher.len()]; // XOR
     }
     bytes
 }
