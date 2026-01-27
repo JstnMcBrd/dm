@@ -1,5 +1,4 @@
-use local_ip_address::local_ipv6;
-use sodiumoxide::crypto::box_;
+use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
@@ -30,9 +29,9 @@ fn main() {
 
     send_ciphered(&stream, self_pk.as_ref(), name.as_bytes());
     let other_pk_bytes = receive_ciphered(&stream, other_name.as_bytes());
-    let other_pk = box_::PublicKey::from_slice(&other_pk_bytes).expect("Failed to parse bytes");
+    let other_pk = PublicKey::from_slice(&other_pk_bytes).expect("Failed to parse bytes");
 
-    let temp_nonce = box_::Nonce([0u8; box_::NONCEBYTES]);
+    let temp_nonce = Nonce([0u8; box_::NONCEBYTES]);
     send_encrypted(
         &stream,
         other_name.as_bytes(),
@@ -57,7 +56,7 @@ fn main() {
         let stream = stream_clone;
         let self_sk = self_sk_clone;
 
-        let mut nonce = box_::Nonce([0u8; box_::NONCEBYTES]);
+        let mut nonce = Nonce([0u8; box_::NONCEBYTES]);
         loop {
             let message = prompt_message();
             send_encrypted(&stream, message.as_bytes(), &nonce, &other_pk, &self_sk);
@@ -68,7 +67,7 @@ fn main() {
 
     // Receive messages
     {
-        let mut nonce = box_::Nonce([0u8; box_::NONCEBYTES]);
+        let mut nonce = Nonce([0u8; box_::NONCEBYTES]);
         loop {
             let message_bytes = receive_encrypted(&stream, &nonce, &other_pk, &self_sk);
             let message = String::from_utf8(message_bytes).expect("Failed to parse bytes");
@@ -119,7 +118,7 @@ fn connect() -> TcpStream {
 fn listen() -> TcpStream {
     let listener = TcpListener::bind("[::]:0").expect("Failed to bind to port");
 
-    let local_ipv6 = local_ipv6().expect("Failed to get local IPv6");
+    let local_ipv6 = local_ip_address::local_ipv6().expect("Failed to get local IPv6");
     let port = listener
         .local_addr()
         .expect("Failed to get local address")
@@ -180,9 +179,9 @@ fn receive_ciphered(stream: &TcpStream, cipher: &[u8]) -> Vec<u8> {
 fn send_encrypted(
     stream: &TcpStream,
     bytes: &[u8],
-    nonce: &box_::Nonce,
-    other_pk: &box_::PublicKey,
-    self_sk: &box_::SecretKey,
+    nonce: &Nonce,
+    other_pk: &PublicKey,
+    self_sk: &SecretKey,
 ) {
     let encrypted = box_::seal(bytes, nonce, other_pk, self_sk);
     send_insecure(stream, &encrypted);
@@ -190,9 +189,9 @@ fn send_encrypted(
 
 fn receive_encrypted(
     stream: &TcpStream,
-    nonce: &box_::Nonce,
-    other_pk: &box_::PublicKey,
-    self_sk: &box_::SecretKey,
+    nonce: &Nonce,
+    other_pk: &PublicKey,
+    self_sk: &SecretKey,
 ) -> Vec<u8> {
     let encrypted = receive_insecure(stream);
     box_::open(&encrypted, nonce, other_pk, self_sk).expect("Failed to decrypt message")
