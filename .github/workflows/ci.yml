@@ -1,5 +1,5 @@
 name: CI
-description: Formats, lints, and compiles the project whenever a pull request is opened or merged
+# Formats, lints, and compiles the project whenever a pull request is opened or merged
 
 on:
   pull_request:
