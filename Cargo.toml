@@ -5,5 +5,5 @@ license = "MIT"
 edition = "2024"
 
 [dependencies]
-local-ip-address = "0.6.9"
+local-ip-address = "0.6.10"
 sodiumoxide = "0.2.7"
