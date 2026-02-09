@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactor error handling to be more robust and idiomatic ([#17](https://github.com/JstnMcBrd/dm/pull/17))
+
 ## [0.2.0] - 2026-02-09
 
 ### Added
