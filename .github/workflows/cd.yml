@@ -1,0 +1,49 @@
+name: CD
+# Builds, zips, and uploads executables to a GitHub release when it is published
+
+on:
+  release:
+    types: [released]
+
+permissions: {}
+
+jobs:
+  assets:
+    name: Upload release assets
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exe: dm.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            exe: dm
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            exe: dm
+
+    runs-on: ${{ matrix.os }}
+        
+    permissions:
+      # contents: read # Required for actions/checkout
+      contents: write # Required for uploading release assets
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+        
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+        
+      - name: Zip executable
+        run: 7z a dm-${{ matrix.target }}.zip target/${{ matrix.target }}/release/${{ matrix.exe }}
+        
+      - name: Upload asset
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: dm-${{ matrix.target }}.zip
