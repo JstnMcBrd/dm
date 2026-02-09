@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add a CHANGELOG file ([#11](https://github.com/JstnMcBrd/dm/pull/11))
+- Add versioning section to README ([#11](https://github.com/JstnMcBrd/dm/pull/11))
 
 ### Changed
 
