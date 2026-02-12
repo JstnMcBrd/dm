@@ -8,7 +8,7 @@ I wrote this project to teach myself Rust.
 
 ## Disclaimer
 
-This project uses simple end-to-end encryption, but it is far from comprehensive and could be vulnerable to man-in-the-middle attacks.
+This project uses simple end-to-end encryption, but it is far from comprehensive and could have many potential vulnerabilities.
 
 I designed it as a fun experiment, not a reliable secure communication method. Do not use this project for anything important.
 
