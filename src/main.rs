@@ -1,14 +1,16 @@
-use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
+use chacha20poly1305::{
+    ChaCha20Poly1305, Nonce,
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+};
+use hkdf::Hkdf;
+use sha2::Sha256;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
+use x25519_dalek::{EphemeralSecret, PublicKey};
 
 fn main() {
     let name = get_input("Name").expect("Could not get input");
-
-    // Generate a public/private key
-    sodiumoxide::init().expect("Failed to initialize sodiumoxide");
-    let (self_pk, self_sk) = box_::gen_keypair();
 
     // Establish TCP connection
     let stream = loop {
@@ -24,60 +26,69 @@ fn main() {
         stream.peer_addr().expect("Failed to get peer address")
     );
 
-    // Exchange keys and confirm names
     let other_name = get_input("Recipient").expect("Could not get input");
-
-    send_ciphered(&stream, self_pk.as_ref(), name.as_bytes()).expect("Failed to send public key");
-    let other_pk_bytes =
-        receive_ciphered(&stream, other_name.as_bytes()).expect("Failed to receive public key");
-    let other_pk = PublicKey::from_slice(&other_pk_bytes).expect("Failed to parse public key");
-
-    let temp_nonce = Nonce([0u8; box_::NONCEBYTES]);
-    send_encrypted(
-        &stream,
-        other_name.as_bytes(),
-        &temp_nonce,
-        &other_pk,
-        &self_sk,
-    )
-    .expect("Failed to send confirmation");
-    let conf_bytes = receive_encrypted(&stream, &temp_nonce, &other_pk, &self_sk)
-        .expect("Failed to receive confirmation");
-    let conf = String::from_utf8(conf_bytes).expect("Failed to parse confirmation");
-    if conf == name {
-        println!("Confirmed connection with {other_name}");
-    } else {
-        panic!("Incorrect recipient");
-    }
-
     println!();
+
+    // Diffie-Hellman key exchange
+    let self_sk = EphemeralSecret::random_from_rng(OsRng);
+    let self_pk = PublicKey::from(&self_sk);
+
+    send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
+    let other_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
+    let other_pk = PublicKey::from(
+        *other_pk_bytes
+            .as_array()
+            .expect("Failed to parse public key"),
+    );
+
+    let shared_secret = self_sk.diffie_hellman(&other_pk);
+
+    // Derive symmetric key
+    let hkdf = Hkdf::<Sha256>::new(None, shared_secret.as_bytes());
+    let mut symmetric_key = [0u8; 32];
+    hkdf.expand(b"dm/session-key", &mut symmetric_key)
+        .expect("Failed to derive symmetric key");
+
+    // Initialize encryption algorithm
+    let cipher = ChaCha20Poly1305::new(&symmetric_key.into());
 
     // Send messages
     let stream_clone = stream.try_clone().expect("Failed to clone stream");
-    let self_sk_clone = self_sk.clone();
+    let cipher_clone = cipher.clone();
     thread::spawn(move || {
         let stream = stream_clone;
-        let self_sk = self_sk_clone;
+        let cipher = cipher_clone;
 
-        let mut nonce = Nonce([0u8; box_::NONCEBYTES]);
         loop {
+            let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+            send_tcp(&stream, nonce.as_ref()).expect("Failed to send nonce");
+
             let message = prompt_message().expect("Could not prompt message");
-            send_encrypted(&stream, message.as_bytes(), &nonce, &other_pk, &self_sk)
-                .expect("Failed to send message");
+
+            let encrypted = cipher
+                .encrypt(&nonce, message.as_bytes())
+                .expect("Failed to encrypt message");
+
+            send_tcp(&stream, &encrypted).expect("Failed to send message");
+
             println!("{name}: {message}");
-            nonce.increment_le_inplace();
         }
     });
 
     // Receive messages
     {
-        let mut nonce = Nonce([0u8; box_::NONCEBYTES]);
         loop {
-            let message_bytes = receive_encrypted(&stream, &nonce, &other_pk, &self_sk)
-                .expect("Failed to receive message");
+            let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
+            let nonce = Nonce::from_slice(&nonce_bytes);
+
+            let encrypted = receive_tcp(&stream).expect("Failed to receive message");
+
+            let message_bytes = cipher
+                .decrypt(nonce, encrypted.as_slice())
+                .expect("Failed to decrypt message");
             let message = String::from_utf8(message_bytes).expect("Failed to parse message");
+
             println!("{other_name}: {message}");
-            nonce.increment_le_inplace();
         }
     }
 }
@@ -137,10 +148,10 @@ fn prompt_message() -> Result<String, io::Error> {
     Ok(input.trim().to_string())
 }
 
-fn send_insecure(stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
+fn send_tcp(stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
     let mut writer = BufWriter::new(stream);
 
-    let len = bytes.len();
+    let len = bytes.len() as u64;
     writer.write_all(&len.to_be_bytes())?;
 
     writer.write_all(bytes)?;
@@ -148,7 +159,7 @@ fn send_insecure(stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn receive_insecure(stream: &TcpStream) -> Result<Vec<u8>, io::Error> {
+fn receive_tcp(stream: &TcpStream) -> Result<Vec<u8>, io::Error> {
     let mut reader = BufReader::new(stream);
 
     let mut len_buf = [0u8; 8];
@@ -158,47 +169,4 @@ fn receive_insecure(stream: &TcpStream) -> Result<Vec<u8>, io::Error> {
     let mut buf = vec![0u8; len];
     reader.read_exact(&mut buf)?;
     Ok(buf)
-}
-
-fn send_ciphered(stream: &TcpStream, bytes: &[u8], cipher: &[u8]) -> Result<(), io::Error> {
-    let mut bytes = bytes.to_vec();
-    for (i, byte) in bytes.iter_mut().enumerate() {
-        *byte ^= cipher[i % cipher.len()]; // XOR
-    }
-    send_insecure(stream, &bytes)
-}
-
-fn receive_ciphered(stream: &TcpStream, cipher: &[u8]) -> Result<Vec<u8>, io::Error> {
-    let mut bytes = receive_insecure(stream)?;
-    for (i, byte) in bytes.iter_mut().enumerate() {
-        *byte ^= cipher[i % cipher.len()]; // XOR
-    }
-    Ok(bytes)
-}
-
-fn send_encrypted(
-    stream: &TcpStream,
-    bytes: &[u8],
-    nonce: &Nonce,
-    other_pk: &PublicKey,
-    self_sk: &SecretKey,
-) -> Result<(), io::Error> {
-    let encrypted = box_::seal(bytes, nonce, other_pk, self_sk);
-    send_insecure(stream, &encrypted)
-}
-
-fn receive_encrypted(
-    stream: &TcpStream,
-    nonce: &Nonce,
-    other_pk: &PublicKey,
-    self_sk: &SecretKey,
-) -> Result<Vec<u8>, io::Error> {
-    let encrypted = receive_insecure(stream)?;
-    match box_::open(&encrypted, nonce, other_pk, self_sk) {
-        Ok(plaintext) => Ok(plaintext),
-        Err(_) => Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Decryption failed",
-        )),
-    }
 }
