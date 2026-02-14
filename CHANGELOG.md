@@ -7,18 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **Breaking:** add Diffie-Hellman key exchange with [`x25519-dalek`](https://crates.io/crates/x25519-dalek) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
-- **Breaking:** add HKDF key derivation with [`hkdf`](https://crates.io/crates/hkdf) and [`sha2`](https://crates.io/crates/sha2) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
-- **Breaking:** add symmetric encryption with [`chacha20poly1305`](https://crates.io/crates/chacha20poly1305) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
-
 ### Changed
 
 - Refactor error handling to be more robust and idiomatic ([#17](https://github.com/JstnMcBrd/dm/pull/17))
 - **Breaking:** generate random nonces instead of incrementing ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 - **Breaking:** send the nonce before each message ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 - Display and read IPv6 address and port together ([#20](https://github.com/JstnMcBrd/dm/pull/20))
+
+### Added
+
+- **Breaking:** add Diffie-Hellman key exchange with [`x25519-dalek`](https://crates.io/crates/x25519-dalek) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** add HKDF key derivation with [`hkdf`](https://crates.io/crates/hkdf) and [`sha2`](https://crates.io/crates/sha2) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** add symmetric encryption with [`chacha20poly1305`](https://crates.io/crates/chacha20poly1305) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 
 ### Removed
 
@@ -31,15 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2026-02-09
 
-### Added
-
-- Add a CHANGELOG file ([#11](https://github.com/JstnMcBrd/dm/pull/11))
-- Add versioning section to README ([#11](https://github.com/JstnMcBrd/dm/pull/11))
-
 ### Changed
 
 - **Breaking:** use bitwise XOR for ciphertext ([#7](https://github.com/JstnMcBrd/dm/pull/7))
 - Use idiomatic `use` paths ([#8](https://github.com/JstnMcBrd/dm/pull/8))
+
+### Added
+
+- Add a CHANGELOG file ([#11](https://github.com/JstnMcBrd/dm/pull/11))
+- Add versioning section to README ([#11](https://github.com/JstnMcBrd/dm/pull/11))
 
 ### Fixed
 
