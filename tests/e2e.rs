@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader, Write};
+use std::net::{Ipv6Addr, SocketAddrV6};
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
@@ -41,7 +42,7 @@ fn e2e() {
         let reader = BufReader::new(client1_stdout);
         for line in reader.lines() {
             let line = line.unwrap();
-            println!("Client 1: {}", line);
+            println!("Client 1: {line}");
             let _ = tx1.send(line);
         }
     });
@@ -51,7 +52,7 @@ fn e2e() {
         let reader = BufReader::new(client2_stdout);
         for line in reader.lines() {
             let line = line.unwrap();
-            println!("Client 2: {}", line);
+            println!("Client 2: {line}");
             let _ = tx2.send(line);
         }
     });
@@ -64,31 +65,25 @@ fn e2e() {
     writeln!(client1_stdin, "l").unwrap();
     client1_stdin.flush().unwrap();
 
-    // Extract IPv6 and port from client 1
-    let mut ipv6 = None;
-    let mut port = None;
+    // Extract address from client 1
+    let mut address = None;
     for _ in 0..20 {
         if let Ok(line) = rx1.recv_timeout(Duration::from_secs(1)) {
-            if line.contains("IPv6 Address:") {
-                ipv6 = Some(line.split("IPv6 Address: ").nth(1).unwrap().to_string());
-            } else if line.contains("Port:") {
-                port = Some(line.split("Port: ").nth(1).unwrap().to_string());
+            if line.contains("Address:") {
+                address = Some(line.split("Address: ").nth(1).unwrap().to_string());
                 break;
             }
         }
     }
 
-    assert!(
-        ipv6.is_some() && port.is_some(),
-        "Failed to open TCP listener"
-    );
-
-    let ipv6 = if std::env::var("GITHUB_ACTIONS").is_ok() {
-        String::from("::1")
-    } else {
-        ipv6.unwrap()
+    let mut address = match address {
+        Some(addr) => addr.parse::<SocketAddrV6>().unwrap(),
+        None => panic!("Failed to open TCP listener"),
     };
-    let port = port.unwrap();
+
+    if std::env::var("GITHUB_ACTIONS").is_ok() {
+        address.set_ip(Ipv6Addr::LOCALHOST); // Use localhost on GitHub runners
+    }
 
     // Input name to client 2
     writeln!(client2_stdin, "{client2_name}").unwrap();
@@ -98,12 +93,8 @@ fn e2e() {
     writeln!(client2_stdin, "c").unwrap();
     client2_stdin.flush().unwrap();
 
-    // Input IPv6 to client 2
-    writeln!(client2_stdin, "{ipv6}").unwrap();
-    client2_stdin.flush().unwrap();
-
-    // Input port to client 2
-    writeln!(client2_stdin, "{port}").unwrap();
+    // Input address to client 2
+    writeln!(client2_stdin, "{address}").unwrap();
     client2_stdin.flush().unwrap();
 
     // Wait for connections
