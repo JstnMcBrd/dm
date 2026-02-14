@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Breaking:** add Diffie-Hellman key exchange with [`x25519-dalek`](https://crates.io/crates/x25519-dalek) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** add HKDF key derivation with [`hkdf`](https://crates.io/crates/hkdf) and [`sha2`](https://crates.io/crates/sha2) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** add symmetric encryption with [`chacha20poly1305`](https://crates.io/crates/chacha20poly1305) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+
 ### Changed
 
 - Refactor error handling to be more robust and idiomatic ([#17](https://github.com/JstnMcBrd/dm/pull/17))
+- **Breaking:** generate random nonces instead of incrementing ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** send the nonce before each message ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+
+### Removed
+
+- **Breaking:** remove asymmetric encryption with deprecated [`sodiumoxide`](https://crates.io/crates/sodiumoxide) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- **Breaking:** remove username-ciphered key exchange and confirmation ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 
 ## [0.2.0] - 2026-02-09
 
