@@ -55,3 +55,23 @@ jobs:
 
       - name: Compile
         run: cargo check
+
+  test:
+    name: Test
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read # Required for actions/checkout
+
+    steps:
+      # IPv6 workaround for GitHub runners
+      # https://www.jucktion.com/ipv6-github-actions
+      - name: Set up WARP
+        uses: fscarmen/warp-on-actions@37ce1997e075435a827991dabcce1d080c1fe512 # v1.4
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Test
+        run: cargo test
