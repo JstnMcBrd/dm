@@ -26,7 +26,7 @@ fn main() {
         stream.peer_addr().expect("Failed to get peer address")
     );
 
-    let other_name = get_input("Recipient").expect("Could not get input");
+    let peer_name = get_input("Recipient").expect("Could not get input");
     println!();
 
     // Diffie-Hellman key exchange
@@ -34,14 +34,14 @@ fn main() {
     let self_pk = PublicKey::from(&self_sk);
 
     send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
-    let other_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
-    let other_pk = PublicKey::from(
-        *other_pk_bytes
+    let peer_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
+    let peer_pk = PublicKey::from(
+        *peer_pk_bytes
             .as_array()
             .expect("Failed to parse public key"),
     );
 
-    let shared_secret = self_sk.diffie_hellman(&other_pk);
+    let shared_secret = self_sk.diffie_hellman(&peer_pk);
 
     // Derive symmetric key
     let hkdf = Hkdf::<Sha256>::new(None, shared_secret.as_bytes());
@@ -88,7 +88,7 @@ fn main() {
                 .expect("Failed to decrypt message");
             let message = String::from_utf8(message_bytes).expect("Failed to parse message");
 
-            println!("{other_name}: {message}");
+            println!("{peer_name}: {message}");
         }
     }
 }
