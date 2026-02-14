@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor error handling to be more robust and idiomatic ([#17](https://github.com/JstnMcBrd/dm/pull/17))
 - **Breaking:** generate random nonces instead of incrementing ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 - **Breaking:** send the nonce before each message ([#18](https://github.com/JstnMcBrd/dm/pull/18))
+- Display and read IPv6 address and port together ([#20](https://github.com/JstnMcBrd/dm/pull/20))
 
 ### Removed
 

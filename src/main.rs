@@ -5,7 +5,7 @@ use chacha20poly1305::{
 use hkdf::Hkdf;
 use sha2::Sha256;
 use std::io::{self, BufReader, BufWriter, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{IpAddr, SocketAddrV6, TcpListener, TcpStream};
 use std::thread;
 use x25519_dalek::{EphemeralSecret, PublicKey};
 
@@ -94,11 +94,9 @@ fn main() {
 }
 
 fn connect() -> TcpStream {
-    let ipv6 = get_input("IPv6 Address").expect("Could not get input");
-    let port = get_input("Port").expect("Could not get input");
+    let address = get_input("Address").expect("Could not get input");
     println!("Connecting...");
 
-    let address = format!("[{ipv6}]:{port}");
     loop {
         match TcpStream::connect(&address) {
             Ok(stream) => break stream,
@@ -110,14 +108,18 @@ fn connect() -> TcpStream {
 fn listen() -> TcpStream {
     let listener = TcpListener::bind("[::]:0").expect("Failed to bind to port");
 
-    let local_ipv6 = local_ip_address::local_ipv6().expect("Failed to get local IPv6");
+    let ipv6 = local_ip_address::local_ipv6().expect("Failed to get local IPv6 address");
+    let ipv6 = match ipv6 {
+        IpAddr::V6(ipv6) => ipv6,
+        _ => panic!("local_ip_address::local_ipv6 returned non-IPv6 address"),
+    };
     let port = listener
         .local_addr()
         .expect("Failed to get local address")
         .port();
+    let address = SocketAddrV6::new(ipv6, port, 0, 0);
 
-    println!("IPv6 Address: {local_ipv6}");
-    println!("Port: {port}");
+    println!("Address: {address}");
     println!("Listening...");
 
     loop {
