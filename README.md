@@ -27,6 +27,12 @@ cargo fmt
 cargo clippy
 ```
 
+Test the project:
+
+```sh
+cargo test
+```
+
 Run the project:
 
 ```sh
