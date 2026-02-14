@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** remove asymmetric encryption with deprecated [`sodiumoxide`](https://crates.io/crates/sodiumoxide) ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 - **Breaking:** remove username-ciphered key exchange and confirmation ([#18](https://github.com/JstnMcBrd/dm/pull/18))
 
+### Fixed
+
+- Move executable to root of zip file ([#16](https://github.com/JstnMcBrd/dm/pull/16))
+
 ## [0.2.0] - 2026-02-09
 
 ### Added
