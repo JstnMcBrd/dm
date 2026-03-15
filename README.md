@@ -44,5 +44,3 @@ Build the project:
 ```sh
 cargo build --release
 ```
-
-The executable will be in `./target/release`.
