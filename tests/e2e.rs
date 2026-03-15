@@ -7,11 +7,11 @@ use std::time::Duration;
 
 #[test]
 fn e2e() {
-    let exe = env!("CARGO_BIN_EXE_dm");
+    let bin = env!("CARGO_BIN_EXE_dm");
 
     // Start client 1
     let client1_name = "Alice";
-    let mut client1 = Command::new(exe)
+    let mut client1 = Command::new(bin)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -23,7 +23,7 @@ fn e2e() {
 
     // Start client 2
     let client2_name = "Bob";
-    let mut client2 = Command::new(exe)
+    let mut client2 = Command::new(bin)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
