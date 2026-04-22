@@ -4,7 +4,7 @@ use chacha20poly1305::{
 };
 use hkdf::Hkdf;
 use sha2::Sha256;
-use std::io::{self, BufReader, BufWriter, Read, Write};
+use std::io::{self, Read, Write};
 use std::net::{IpAddr, SocketAddrV6, TcpListener, TcpStream};
 use std::thread;
 use x25519_dalek::{EphemeralSecret, PublicKey};
@@ -13,7 +13,7 @@ fn main() {
     let name = get_input("Name").expect("Could not get input");
 
     // Establish TCP connection
-    let stream = loop {
+    let mut stream = loop {
         let choice = get_input("Connect/Listen (c/l)").expect("Could not get input");
         match choice.to_lowercase().as_str() {
             "connect" | "c" => break connect(),
@@ -33,8 +33,8 @@ fn main() {
     let self_sk = EphemeralSecret::random_from_rng(OsRng);
     let self_pk = PublicKey::from(&self_sk);
 
-    send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
-    let peer_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
+    send_tcp(&mut stream, self_pk.as_ref()).expect("Failed to send public key");
+    let peer_pk_bytes = receive_tcp(&mut stream).expect("Failed to receive public key");
     let peer_pk = PublicKey::from(
         *peer_pk_bytes
             .as_array()
@@ -56,12 +56,12 @@ fn main() {
     let stream_clone = stream.try_clone().expect("Failed to clone stream");
     let cipher_clone = cipher.clone();
     thread::spawn(move || {
-        let stream = stream_clone;
+        let mut stream = stream_clone;
         let cipher = cipher_clone;
 
         loop {
             let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-            send_tcp(&stream, nonce.as_ref()).expect("Failed to send nonce");
+            send_tcp(&mut stream, nonce.as_ref()).expect("Failed to send nonce");
 
             let message = prompt_message().expect("Could not prompt message");
 
@@ -69,7 +69,7 @@ fn main() {
                 .encrypt(&nonce, message.as_bytes())
                 .expect("Failed to encrypt message");
 
-            send_tcp(&stream, &encrypted).expect("Failed to send message");
+            send_tcp(&mut stream, &encrypted).expect("Failed to send message");
 
             println!("{name}: {message}");
         }
@@ -78,10 +78,10 @@ fn main() {
     // Receive messages
     {
         loop {
-            let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
+            let nonce_bytes = receive_tcp(&mut stream).expect("Failed to receive nonce");
             let nonce = Nonce::from_slice(&nonce_bytes);
 
-            let encrypted = receive_tcp(&stream).expect("Failed to receive message");
+            let encrypted = receive_tcp(&mut stream).expect("Failed to receive message");
 
             let message_bytes = cipher
                 .decrypt(nonce, encrypted.as_slice())
@@ -150,25 +150,21 @@ fn prompt_message() -> Result<String, io::Error> {
     Ok(input.trim().to_string())
 }
 
-fn send_tcp(stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
-    let mut writer = BufWriter::new(stream);
-
+fn send_tcp(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
     let len = bytes.len() as u64;
-    writer.write_all(&len.to_be_bytes())?;
+    stream.write_all(&len.to_be_bytes())?;
 
-    writer.write_all(bytes)?;
-    writer.flush()?;
+    stream.write_all(bytes)?;
+    stream.flush()?;
     Ok(())
 }
 
-fn receive_tcp(stream: &TcpStream) -> Result<Vec<u8>, io::Error> {
-    let mut reader = BufReader::new(stream);
-
+fn receive_tcp(stream: &mut TcpStream) -> Result<Vec<u8>, io::Error> {
     let mut len_buf = [0u8; 8];
-    reader.read_exact(&mut len_buf)?;
+    stream.read_exact(&mut len_buf)?;
     let len = u64::from_be_bytes(len_buf) as usize;
 
     let mut buf = vec![0u8; len];
-    reader.read_exact(&mut buf)?;
+    stream.read_exact(&mut buf)?;
     Ok(buf)
 }
