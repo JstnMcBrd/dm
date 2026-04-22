@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Several idiomatic Rust improvements ([#30](https://github.com/JstnMcBrd/dm/pull/30))
+
 ### Fixed
 
 - Fix data loss from ephemeral BufReader by using TcpStream directly ([#29](https://github.com/JstnMcBrd/dm/pull/29))

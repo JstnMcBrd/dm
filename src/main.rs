@@ -13,7 +13,7 @@ fn main() {
     let name = get_input("Name").expect("Could not get input");
 
     // Establish TCP connection
-    let mut stream = loop {
+    let stream = loop {
         let choice = get_input("Connect/Listen (c/l)").expect("Could not get input");
         match choice.to_lowercase().as_str() {
             "connect" | "c" => break connect(),
@@ -33,13 +33,10 @@ fn main() {
     let self_sk = EphemeralSecret::random_from_rng(OsRng);
     let self_pk = PublicKey::from(&self_sk);
 
-    send_tcp(&mut stream, self_pk.as_ref()).expect("Failed to send public key");
-    let peer_pk_bytes = receive_tcp(&mut stream).expect("Failed to receive public key");
-    let peer_pk = PublicKey::from(
-        *peer_pk_bytes
-            .as_array()
-            .expect("Failed to parse public key"),
-    );
+    send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
+    let peer_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
+    let peer_pk =
+        PublicKey::from(<[u8; 32]>::try_from(peer_pk_bytes).expect("Failed to parse public key"));
 
     let shared_secret = self_sk.diffie_hellman(&peer_pk);
 
@@ -53,15 +50,12 @@ fn main() {
     let cipher = ChaCha20Poly1305::new(&symmetric_key.into());
 
     // Send messages
-    let stream_clone = stream.try_clone().expect("Failed to clone stream");
-    let cipher_clone = cipher.clone();
-    thread::spawn(move || {
-        let mut stream = stream_clone;
-        let cipher = cipher_clone;
-
-        loop {
+    thread::spawn({
+        let stream = stream.try_clone().expect("Failed to clone stream");
+        let cipher = cipher.clone();
+        move || loop {
             let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-            send_tcp(&mut stream, nonce.as_ref()).expect("Failed to send nonce");
+            send_tcp(&stream, nonce.as_ref()).expect("Failed to send nonce");
 
             let message = prompt_message().expect("Could not prompt message");
 
@@ -69,27 +63,25 @@ fn main() {
                 .encrypt(&nonce, message.as_bytes())
                 .expect("Failed to encrypt message");
 
-            send_tcp(&mut stream, &encrypted).expect("Failed to send message");
+            send_tcp(&stream, &encrypted).expect("Failed to send message");
 
             println!("{name}: {message}");
         }
     });
 
     // Receive messages
-    {
-        loop {
-            let nonce_bytes = receive_tcp(&mut stream).expect("Failed to receive nonce");
-            let nonce = Nonce::from_slice(&nonce_bytes);
+    loop {
+        let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
-            let encrypted = receive_tcp(&mut stream).expect("Failed to receive message");
+        let encrypted = receive_tcp(&stream).expect("Failed to receive message");
 
-            let message_bytes = cipher
-                .decrypt(nonce, encrypted.as_slice())
-                .expect("Failed to decrypt message");
-            let message = String::from_utf8(message_bytes).expect("Failed to parse message");
+        let message_bytes = cipher
+            .decrypt(nonce, encrypted.as_slice())
+            .expect("Failed to decrypt message");
+        let message = String::from_utf8(message_bytes).expect("Failed to parse message");
 
-            println!("{peer_name}: {message}");
-        }
+        println!("{peer_name}: {message}");
     }
 }
 
@@ -108,10 +100,10 @@ fn connect() -> TcpStream {
 fn listen() -> TcpStream {
     let listener = TcpListener::bind("[::]:0").expect("Failed to bind to port");
 
-    let ipv6 = local_ip_address::local_ipv6().expect("Failed to get local IPv6 address");
-    let ipv6 = match ipv6 {
-        IpAddr::V6(ipv6) => ipv6,
-        _ => panic!("local_ip_address::local_ipv6 returned non-IPv6 address"),
+    let IpAddr::V6(ipv6) =
+        local_ip_address::local_ipv6().expect("Failed to get local IPv6 address")
+    else {
+        panic!("local_ip_address::local_ipv6 returned non-IPv6 address");
     };
     let port = listener
         .local_addr()
@@ -150,16 +142,15 @@ fn prompt_message() -> Result<String, io::Error> {
     Ok(input.trim().to_string())
 }
 
-fn send_tcp(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
+fn send_tcp(mut stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
     let len = bytes.len() as u64;
     stream.write_all(&len.to_be_bytes())?;
 
     stream.write_all(bytes)?;
-    stream.flush()?;
     Ok(())
 }
 
-fn receive_tcp(stream: &mut TcpStream) -> Result<Vec<u8>, io::Error> {
+fn receive_tcp(mut stream: &TcpStream) -> Result<Vec<u8>, io::Error> {
     let mut len_buf = [0u8; 8];
     stream.read_exact(&mut len_buf)?;
     let len = u64::from_be_bytes(len_buf) as usize;
