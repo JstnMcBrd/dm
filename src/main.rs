@@ -73,20 +73,18 @@ fn main() {
     });
 
     // Receive messages
-    {
-        loop {
-            let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
-            let nonce = Nonce::from_slice(&nonce_bytes);
+    loop {
+        let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
-            let encrypted = receive_tcp(&stream).expect("Failed to receive message");
+        let encrypted = receive_tcp(&stream).expect("Failed to receive message");
 
-            let message_bytes = cipher
-                .decrypt(nonce, encrypted.as_slice())
-                .expect("Failed to decrypt message");
-            let message = String::from_utf8(message_bytes).expect("Failed to parse message");
+        let message_bytes = cipher
+            .decrypt(nonce, encrypted.as_slice())
+            .expect("Failed to decrypt message");
+        let message = String::from_utf8(message_bytes).expect("Failed to parse message");
 
-            println!("{peer_name}: {message}");
-        }
+        println!("{peer_name}: {message}");
     }
 }
 
