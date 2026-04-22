@@ -118,14 +118,6 @@ fn e2e() {
 
     assert!(client1_connected && client2_connected, "Connections failed");
 
-    // Input recipient to client 1
-    writeln!(client1_stdin, "{client2_name}").unwrap();
-    client1_stdin.flush().unwrap();
-
-    // Input recipient to client 2
-    writeln!(client2_stdin, "{client1_name}").unwrap();
-    client2_stdin.flush().unwrap();
-
     // Send message from client 2 to client 1
     let message = format!("Hello from {client2_name}");
     writeln!(client2_stdin, "{message}").unwrap();

@@ -26,9 +26,6 @@ fn main() {
         stream.peer_addr().expect("Failed to get peer address")
     );
 
-    let peer_name = get_input("Recipient").expect("Could not get input");
-    println!();
-
     // Diffie-Hellman key exchange
     let self_sk = EphemeralSecret::random_from_rng(OsRng);
     let self_pk = PublicKey::from(&self_sk);
@@ -49,38 +46,28 @@ fn main() {
     // Initialize encryption algorithm
     let cipher = ChaCha20Poly1305::new(&symmetric_key.into());
 
+    // Exchange names
+    send_encrypted(&stream, &cipher, name.as_bytes()).expect("Failed to send name");
+    let peer_name_bytes = receive_encrypted(&stream, &cipher).expect("Failed to receive peer name");
+    let peer_name = String::from_utf8(peer_name_bytes).expect("Failed to parse peer name");
+
+    println!();
+
     // Send messages
     thread::spawn({
         let stream = stream.try_clone().expect("Failed to clone stream");
         let cipher = cipher.clone();
         move || loop {
-            let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-            send_tcp(&stream, nonce.as_ref()).expect("Failed to send nonce");
-
             let message = prompt_message().expect("Could not prompt message");
-
-            let encrypted = cipher
-                .encrypt(&nonce, message.as_bytes())
-                .expect("Failed to encrypt message");
-
-            send_tcp(&stream, &encrypted).expect("Failed to send message");
-
+            send_encrypted(&stream, &cipher, message.as_bytes()).expect("Failed to send message");
             println!("{name}: {message}");
         }
     });
 
     // Receive messages
     loop {
-        let nonce_bytes = receive_tcp(&stream).expect("Failed to receive nonce");
-        let nonce = Nonce::from_slice(&nonce_bytes);
-
-        let encrypted = receive_tcp(&stream).expect("Failed to receive message");
-
-        let message_bytes = cipher
-            .decrypt(nonce, encrypted.as_slice())
-            .expect("Failed to decrypt message");
+        let message_bytes = receive_encrypted(&stream, &cipher).expect("Failed to receive message");
         let message = String::from_utf8(message_bytes).expect("Failed to parse message");
-
         println!("{peer_name}: {message}");
     }
 }
@@ -128,7 +115,7 @@ fn get_input(prompt: &str) -> Result<String, io::Error> {
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
+    Ok(input.trim().to_owned())
 }
 
 fn prompt_message() -> Result<String, io::Error> {
@@ -139,7 +126,29 @@ fn prompt_message() -> Result<String, io::Error> {
     print!("\x1b[1A\x1b[2K");
     io::stdout().flush()?;
 
-    Ok(input.trim().to_string())
+    Ok(input.trim().to_owned())
+}
+
+fn send_encrypted(
+    stream: &TcpStream,
+    cipher: &ChaCha20Poly1305,
+    plaintext: &[u8],
+) -> Result<(), io::Error> {
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let ciphertext = cipher
+        .encrypt(&nonce, plaintext)
+        .map_err(|e| io::Error::other(e.to_string()))?;
+    send_tcp(stream, nonce.as_ref())?;
+    send_tcp(stream, &ciphertext)
+}
+
+fn receive_encrypted(stream: &TcpStream, cipher: &ChaCha20Poly1305) -> Result<Vec<u8>, io::Error> {
+    let nonce_bytes = receive_tcp(stream)?;
+    let nonce = Nonce::from_slice(&nonce_bytes);
+    let ciphertext = receive_tcp(stream)?;
+    cipher
+        .decrypt(nonce, ciphertext.as_slice())
+        .map_err(|e| io::Error::other(e.to_string()))
 }
 
 fn send_tcp(mut stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
