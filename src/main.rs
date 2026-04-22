@@ -35,11 +35,8 @@ fn main() {
 
     send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
     let peer_pk_bytes = receive_tcp(&stream).expect("Failed to receive public key");
-    let peer_pk = PublicKey::from(
-        *peer_pk_bytes
-            .as_array()
-            .expect("Failed to parse public key"),
-    );
+    let peer_pk =
+        PublicKey::from(<[u8; 32]>::try_from(peer_pk_bytes).expect("Failed to parse public key"));
 
     let shared_secret = self_sk.diffie_hellman(&peer_pk);
 
