@@ -115,7 +115,7 @@ fn get_input(prompt: &str) -> Result<String, io::Error> {
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
+    Ok(input.trim().to_owned())
 }
 
 fn prompt_message() -> Result<String, io::Error> {
@@ -126,7 +126,7 @@ fn prompt_message() -> Result<String, io::Error> {
     print!("\x1b[1A\x1b[2K");
     io::stdout().flush()?;
 
-    Ok(input.trim().to_string())
+    Ok(input.trim().to_owned())
 }
 
 fn send_encrypted(
