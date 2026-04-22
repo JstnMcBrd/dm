@@ -103,10 +103,10 @@ fn connect() -> TcpStream {
 fn listen() -> TcpStream {
     let listener = TcpListener::bind("[::]:0").expect("Failed to bind to port");
 
-    let ipv6 = local_ip_address::local_ipv6().expect("Failed to get local IPv6 address");
-    let ipv6 = match ipv6 {
-        IpAddr::V6(ipv6) => ipv6,
-        _ => panic!("local_ip_address::local_ipv6 returned non-IPv6 address"),
+    let IpAddr::V6(ipv6) =
+        local_ip_address::local_ipv6().expect("Failed to get local IPv6 address")
+    else {
+        panic!("local_ip_address::local_ipv6 returned non-IPv6 address");
     };
     let port = listener
         .local_addr()
