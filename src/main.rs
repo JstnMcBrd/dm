@@ -53,13 +53,10 @@ fn main() {
     let cipher = ChaCha20Poly1305::new(&symmetric_key.into());
 
     // Send messages
-    let stream_clone = stream.try_clone().expect("Failed to clone stream");
-    let cipher_clone = cipher.clone();
-    thread::spawn(move || {
-        let stream = stream_clone;
-        let cipher = cipher_clone;
-
-        loop {
+    thread::spawn({
+        let stream = stream.try_clone().expect("Failed to clone stream");
+        let cipher = cipher.clone();
+        move || loop {
             let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
             send_tcp(&stream, nonce.as_ref()).expect("Failed to send nonce");
 
