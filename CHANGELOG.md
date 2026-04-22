@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Several idiomatic Rust improvements ([#30](https://github.com/JstnMcBrd/dm/pull/30))
+- **Breaking:** exchange names automatically ([#31](https://github.com/JstnMcBrd/dm/pull/31))
 
 ### Fixed
 
