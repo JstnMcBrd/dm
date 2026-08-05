@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Format
         run: cargo fmt --check
@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Lint
         run: cargo clippy -- -D warnings
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Compile
         run: cargo check
@@ -71,7 +71,7 @@ jobs:
         uses: fscarmen/warp-on-actions@37ce1997e075435a827991dabcce1d080c1fe512 # v1.4
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Test
         run: cargo test
