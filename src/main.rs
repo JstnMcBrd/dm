@@ -1,6 +1,6 @@
 use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
-    aead::{Aead, AeadCore, KeyInit, OsRng},
+    aead::{Aead, Generate, KeyInit},
 };
 use hkdf::Hkdf;
 use sha2::Sha256;
@@ -143,21 +143,21 @@ fn send_encrypted(
     cipher: &ChaCha20Poly1305,
     plaintext: &[u8],
 ) -> Result<(), io::Error> {
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let nonce = Nonce::generate();
     let ciphertext = cipher
         .encrypt(&nonce, plaintext)
-        .map_err(|e| io::Error::other(e.to_string()))?;
+        .map_err(io::Error::other)?;
     send_tcp(stream, nonce.as_ref())?;
     send_tcp(stream, &ciphertext)
 }
 
 fn receive_encrypted(stream: &TcpStream, cipher: &ChaCha20Poly1305) -> Result<Vec<u8>, io::Error> {
     let nonce_bytes = receive_tcp(stream)?;
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::try_from(nonce_bytes.as_slice()).map_err(io::Error::other)?;
     let ciphertext = receive_tcp(stream)?;
     cipher
-        .decrypt(nonce, ciphertext.as_slice())
-        .map_err(|e| io::Error::other(e.to_string()))
+        .decrypt(&nonce, ciphertext.as_slice())
+        .map_err(io::Error::other)
 }
 
 fn send_tcp(mut stream: &TcpStream, bytes: &[u8]) -> Result<(), io::Error> {
