@@ -28,7 +28,7 @@ fn main() {
     );
 
     // Diffie-Hellman key exchange
-    let self_sk = EphemeralSecret::random_from_rng(OsRng);
+    let self_sk = EphemeralSecret::random();
     let self_pk = PublicKey::from(&self_sk);
 
     send_tcp(&stream, self_pk.as_ref()).expect("Failed to send public key");
