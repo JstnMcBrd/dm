@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Several idiomatic Rust improvements ([#30](https://github.com/JstnMcBrd/dm/pull/30))
 - **Breaking:** exchange names automatically ([#31](https://github.com/JstnMcBrd/dm/pull/31))
+- Use Key type for symmetric key ([#42](https://github.com/JstnMcBrd/dm/pull/42))
 
 ### Fixed
 
