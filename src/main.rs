@@ -1,5 +1,5 @@
 use chacha20poly1305::{
-    ChaCha20Poly1305, Nonce,
+    ChaCha20Poly1305, Key, Nonce,
     aead::{Aead, AeadCore, KeyInit, OsRng},
 };
 use hkdf::Hkdf;
@@ -39,12 +39,12 @@ fn main() {
 
     // Derive symmetric key
     let hkdf = Hkdf::<Sha256>::new(None, shared_secret.as_bytes());
-    let mut symmetric_key = [0u8; 32];
+    let mut symmetric_key = Key::default();
     hkdf.expand(b"dm/session-key", &mut symmetric_key)
         .expect("Failed to derive symmetric key");
 
     // Initialize encryption algorithm
-    let cipher = ChaCha20Poly1305::new(&symmetric_key.into());
+    let cipher = ChaCha20Poly1305::new(&symmetric_key);
 
     // Exchange names
     send_encrypted(&stream, &cipher, name.as_bytes()).expect("Failed to send name");
