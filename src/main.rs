@@ -11,6 +11,7 @@ use x25519_dalek::{EphemeralSecret, PublicKey};
 
 fn main() {
     let name = get_input("Name").expect("Could not get input");
+    let name = sanitize(&name);
 
     // Establish TCP connection
     let stream = loop {
@@ -50,6 +51,7 @@ fn main() {
     send_encrypted(&stream, &cipher, name.as_bytes()).expect("Failed to send name");
     let peer_name_bytes = receive_encrypted(&stream, &cipher).expect("Failed to receive peer name");
     let peer_name = String::from_utf8(peer_name_bytes).expect("Failed to parse peer name");
+    let peer_name = sanitize(&peer_name);
 
     println!();
 
@@ -59,6 +61,7 @@ fn main() {
         let cipher = cipher.clone();
         move || loop {
             let message = prompt_message().expect("Could not prompt message");
+            let message = sanitize(&message);
             send_encrypted(&stream, &cipher, message.as_bytes()).expect("Failed to send message");
             println!("{name}: {message}");
         }
@@ -68,8 +71,14 @@ fn main() {
     loop {
         let message_bytes = receive_encrypted(&stream, &cipher).expect("Failed to receive message");
         let message = String::from_utf8(message_bytes).expect("Failed to parse message");
+        let message = sanitize(&message);
         println!("{peer_name}: {message}");
     }
+}
+
+/// Escapes control characters so text cannot forge lines or inject terminal escape sequences.
+fn sanitize(text: &str) -> String {
+    text.replace(char::is_control, "�")
 }
 
 fn connect() -> TcpStream {
