@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-14
+
 ### Changed
 
 - Several idiomatic Rust improvements ([#30](https://github.com/JstnMcBrd/dm/pull/30))
-- **Breaking:** exchange names automatically ([#31](https://github.com/JstnMcBrd/dm/pull/31))
 - Use Key type for symmetric key ([#42](https://github.com/JstnMcBrd/dm/pull/42))
+- Update all dependencies ([#27](https://github.com/JstnMcBrd/dm/pull/27), [#33](https://github.com/JstnMcBrd/dm/pull/33), [#36](https://github.com/JstnMcBrd/dm/pull/36), [#38](https://github.com/JstnMcBrd/dm/pull/38))
+
+### Added
+
+- **Breaking:** exchange names automatically ([#31](https://github.com/JstnMcBrd/dm/pull/31))
 
 ### Fixed
 
@@ -64,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add code and README ([#1](https://github.com/JstnMcBrd/dm/pull/1))
 
-[Unreleased]: https://github.com/JstnMcBrd/dm/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/JstnMcBrd/dm/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/JstnMcBrd/dm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/JstnMcBrd/dm/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JstnMcBrd/dm/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/JstnMcBrd/dm/releases/tag/v0.1.0
