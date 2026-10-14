@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix data loss from ephemeral BufReader by using TcpStream directly ([#29](https://github.com/JstnMcBrd/dm/pull/29))
+- Sanitize printed text to prevent terminal manipulation ([#43](https://github.com/JstnMcBrd/dm/pull/43))
 
 ## [0.3.0] - 2026-02-14
 
